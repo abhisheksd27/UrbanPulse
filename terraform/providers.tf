@@ -42,3 +42,8 @@ provider "aws" {
 }
 
 
+#Picks the Cloud Translator: Tells Terraform which cloud provider plugin to download (AWS, GCP, Azure) to translate your code into real API calls.
+#Pins Provider Versions: Locks the AWS plugin version (e.g., ~> 5.0) so automatic updates don't break existing code.
+#Sets the Target Region: Specifies where AWS resources will be physically created (e.g., us-east-1).
+#Applies Global Tags: Automatically attaches cost/ownership tags (Project = "UrbanPulse", Environment = "dev") to every resource created.
+#Configures the Remote Backend: Tells Terraform to save its state file (.tfstate) in S3 and use DynamoDB for mutex locks instead of saving locally on your laptop.

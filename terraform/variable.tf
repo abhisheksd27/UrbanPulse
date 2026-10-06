@@ -32,3 +32,11 @@ variable "my_ip_cidr"{
     type        = string
     
 }
+
+
+#Acts as Function Arguments: Defines inputs so your infrastructure code isn't hardcoded.
+#Enables Multi-Environment Deployments: Lets you reuse the exact same code for dev, staging, and prod just by changing variable values.
+#Enforces Type Safety: Restricts inputs to valid types (string, number, list, bool) to catch mistakes before deploying.
+#Sets Safe Defaults: Provides fallback values so the code works out-of-the-box if no value is explicitly passed.
+#Adds Validation Guardrails: Rejects invalid inputs before running (e.g., throws an error if environment is not dev, staging, or prod).
+#Protects Sensitive Data: Marks passwords/keys with sensitive = true so they are never printed in clear text in terminal logs or CLI outputs.
