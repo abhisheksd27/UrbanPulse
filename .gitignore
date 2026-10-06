@@ -3,3 +3,9 @@
 *.tfstate.backup
 .env
 **/.terraform.lock.hcl
+
+# macOS metadata
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
