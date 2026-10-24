@@ -1,0 +1,125 @@
+# dbt Project: UrbanPulse Transformation Layer
+# ==============================================================================
+# This file configures the dbt project — model paths, materializations,
+# naming conventions, and model-specific settings.
+#
+# Documentation: https://docs.getdbt.com/reference/dbt_project.yml
+# ==============================================================================
+
+name: 'urbanpulse'
+version: '1.0.0'
+config-version: 2
+
+# The profile to use when running this project (defined in profiles.yml)
+profile: 'urbanpulse'
+
+# ==============================================================================
+# FILE PATHS
+# Tells dbt where to find models, tests, macros, seeds, and snapshots
+# ==============================================================================
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+# Compiled and built artifact output directory (gitignored)
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# ==============================================================================
+# MODEL CONFIGURATIONS
+# Set default materialization and schema per model layer.
+#
+# Materializations:
+#   view        — Virtual SQL view (fast, no storage cost, recomputed on query)
+#   table       — Physical table (faster queries, uses storage, refreshed on dbt run)
+#   incremental — Only processes new/changed rows (efficient for large fact tables)
+#   ephemeral   — CTEs injected inline into downstream models (no DB object created)
+# ==============================================================================
+models:
+  urbanpulse:
+
+    # ─────────────────────────────────────────────────────────────
+    # STAGING LAYER
+    # Light transformations: rename, cast, minimal filtering.
+    # Views are fine — they are cheap and always reflect source data.
+    # ─────────────────────────────────────────────────────────────
+    staging:
+      +materialized: view
+      +schema: staging        # Redshift schema: staging.*
+      +tags: ["staging"]
+
+    # ─────────────────────────────────────────────────────────────
+    # CORE LAYER (Dimensions + Facts)
+    # Dimensions are small → use tables (fast dimension lookups)
+    # fact_trips is large → use incremental (only process new months)
+    # ─────────────────────────────────────────────────────────────
+    core:
+      +materialized: table
+      +schema: core           # Redshift schema: core.*
+      +tags: ["core"]
+
+      # Override fact_trips to incremental — it grows monthly
+      fact_trips:
+        +materialized: incremental
+        +unique_key: trip_id
+        +incremental_strategy: merge
+
+    # ─────────────────────────────────────────────────────────────
+    # MARTS LAYER
+    # Pre-aggregated business tables powering dashboards.
+    # Tables are materialized for fast BI tool queries.
+    # ─────────────────────────────────────────────────────────────
+    marts:
+      +materialized: table
+      +schema: marts          # Redshift schema: marts.*
+      +tags: ["marts", "business"]
+
+# ==============================================================================
+# SEED CONFIGURATIONS
+# Seeds are CSV files in dbt/seeds/ loaded as static reference tables.
+# We use seeds for: taxi zone lookups, weather code descriptions, holiday lists.
+# ==============================================================================
+seeds:
+  urbanpulse:
+    +schema: seeds            # Redshift schema: seeds.*
+    sf_neighborhoods:
+      +column_types:
+        neighborhood_id: integer
+        neighborhood_name: varchar(100)
+        district: varchar(50)
+    wmo_weather_codes:
+      +column_types:
+        code: integer
+        description: varchar(100)
+        severity: varchar(20)
+
+# ==============================================================================
+# SNAPSHOT CONFIGURATIONS
+# Snapshots capture slowly changing dimensions (e.g., if a neighborhood
+# boundary changes over time). Currently not in use.
+# ==============================================================================
+snapshots:
+  urbanpulse:
+    +target_schema: snapshots
+    +strategy: timestamp
+    +updated_at: updated_at
+
+# ==============================================================================
+# VARS
+# Project-wide dbt variables accessible in any model via {{ var('name') }}
+# Override on CLI: dbt run --vars '{"start_date": "2024-01-01"}'
+# ==============================================================================
+vars:
+  # Date range for the full historical backfill
+  start_date: '2022-01-01'
+  end_date: '2024-12-31'
+
+  # San Francisco coordinates (used in macros)
+  sf_latitude: 37.7749
+  sf_longitude: -122.4194
+
+  # Timezone for all datetime conversions
+  local_timezone: 'America/Los_Angeles'

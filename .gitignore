@@ -1,11 +1,133 @@
-.terraform/
-*.tfstate
-*.tfstate.backup
-.env
-**/.terraform.lock.hcl
+# ==============================================================================
+# .gitignore — UrbanPulse
+#
+# Excludes secrets, build artifacts, local environment files, and cloud state
+# from version control. Never commit credentials or .tfstate files.
+# ==============================================================================
 
-# macOS metadata
+# ─────────────────────────────────────────────────────────────
+# SECRETS & ENVIRONMENT
+# Never commit actual .env files — only .env.example
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+
+# ─────────────────────────────────────────────────────────────
+# PYTHON
+# ─────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+*.ipynb_checkpoints
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# ─────────────────────────────────────────────────────────────
+# TERRAFORM
+# State files contain real infrastructure IDs — store in S3 backend
+# ─────────────────────────────────────────────────────────────
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.lock.hcl
+terraform.tfvars
+!terraform.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+
+# ─────────────────────────────────────────────────────────────
+# DBT
+# ─────────────────────────────────────────────────────────────
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/profiles.yml
+!dbt/profiles.yml.template
+
+# ─────────────────────────────────────────────────────────────
+# AIRFLOW
+# ─────────────────────────────────────────────────────────────
+airflow/logs/
+airflow/plugins/__pycache__/
+
+# ─────────────────────────────────────────────────────────────
+# GREAT EXPECTATIONS
+# ─────────────────────────────────────────────────────────────
+quality/uncommitted/
+quality/.ge_store_backend_id
+
+# ─────────────────────────────────────────────────────────────
+# DATA FILES
+# Never commit raw data — it lives in S3
+# ─────────────────────────────────────────────────────────────
+data/
+*.parquet
+*.csv
+*.json.gz
+*.snappy
+
+# ─────────────────────────────────────────────────────────────
+# DOCKER
+# ─────────────────────────────────────────────────────────────
+docker/volumes/
+
+# ─────────────────────────────────────────────────────────────
+# IDE & OS
+# ─────────────────────────────────────────────────────────────
 .DS_Store
 ._*
-.Spotlight-V100
-.Trashes
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# ─────────────────────────────────────────────────────────────
+# SPARK
+# ─────────────────────────────────────────────────────────────
+spark/jars/
+metastore_db/
+derby.log
+spark-warehouse/
+
+# ─────────────────────────────────────────────────────────────
+# NOTEBOOKS (optional — uncomment if you don't want notebooks tracked)
+# ─────────────────────────────────────────────────────────────
+# *.ipynb

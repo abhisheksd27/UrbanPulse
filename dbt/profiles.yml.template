@@ -1,0 +1,56 @@
+# ==============================================================================
+# dbt/profiles.yml.template — Connection Profile Template
+#
+# Copy this to profiles.yml and fill in your Redshift credentials.
+# profiles.yml is gitignored — never commit real credentials.
+#
+# Usage:
+#   cp dbt/profiles.yml.template dbt/profiles.yml
+#   # Edit profiles.yml with your real Redshift endpoint and password
+#   dbt debug --profiles-dir dbt/  # Test connection
+# ==============================================================================
+
+urbanpulse:
+  target: dev
+
+  outputs:
+
+    # ──────────────────────────────────────────
+    # DEV — Points to dev Redshift cluster
+    # Used during local development and testing
+    # ──────────────────────────────────────────
+    dev:
+      type: redshift
+      host: "{{ env_var('REDSHIFT_HOST') }}"
+      port: 5439
+      user: "{{ env_var('REDSHIFT_USER') }}"
+      password: "{{ env_var('REDSHIFT_PASSWORD') }}"
+      dbname: "{{ env_var('REDSHIFT_DB', 'urbanpulse_dw') }}"
+      schema: core              # Default schema for dbt models
+      threads: 4                # Number of parallel model builds
+      connect_timeout: 30
+      sslmode: require          # Always use SSL (enforced by Redshift parameter group)
+
+      # Redshift-specific performance settings
+      ra3_node: false           # Set true if using RA3 node type for managed storage
+      autocreate: true          # Auto-create schemas (staging, core, marts) if missing
+      search_path: "staging,core,marts,seeds"
+
+    # ──────────────────────────────────────────
+    # PROD — Points to prod Redshift cluster
+    # Used by GitHub Actions CI/CD pipeline
+    # ──────────────────────────────────────────
+    prod:
+      type: redshift
+      host: "{{ env_var('REDSHIFT_HOST_PROD') }}"
+      port: 5439
+      user: "{{ env_var('REDSHIFT_USER_PROD') }}"
+      password: "{{ env_var('REDSHIFT_PASSWORD_PROD') }}"
+      dbname: "urbanpulse_dw"
+      schema: core
+      threads: 8
+      connect_timeout: 30
+      sslmode: require
+      ra3_node: false
+      autocreate: false         # Schemas must exist in prod — no auto-creation
+      search_path: "staging,core,marts,seeds"

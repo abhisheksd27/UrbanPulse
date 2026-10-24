@@ -37,11 +37,17 @@ terraform {
   # Stores the infrastructure 'memory' (.tfstate) in an encrypted S3 bucket
   # rather than on local disk. DynamoDB acts as a mutex lock during applies.
   backend "s3" {
-    bucket         = "nyc-taxi-tf-state-826674370922"
-    key            = "terraform.tfstate"
+    # TODO: Replace with your actual Terraform state bucket name after running:
+    #   aws s3 mb s3://urbanpulse-tf-state-<your-account-id> --region us-east-1
+    #   aws dynamodb create-table --table-name terraform-lock-table \
+    #     --attribute-definitions AttributeName=LockID,AttributeType=S \
+    #     --key-schema AttributeName=LockID,KeyType=HASH \
+    #     --billing-mode PAY_PER_REQUEST
+    bucket         = "urbanpulse-tf-state-REPLACE_WITH_ACCOUNT_ID"
+    key            = "urbanpulse/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "terraform-lock-table" # Mutex lock table
-    encrypt        = true                   # AES256 encryption at rest
+    dynamodb_table = "urbanpulse-terraform-lock"  # Mutex lock table
+    encrypt        = true                          # AES256 encryption at rest
   }
 }
 

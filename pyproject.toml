@@ -1,0 +1,161 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "urbanpulse"
+version = "0.1.0"
+description = "San Francisco Urban Mobility Data Platform — End-to-End Data Engineering on AWS"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "UrbanPulse Data Team" }]
+
+# ─────────────────────────────────────────────────────────────
+# CORE DEPENDENCIES
+# These are required at runtime for all pipeline components
+# ─────────────────────────────────────────────────────────────
+dependencies = [
+    # AWS SDK — S3, Redshift, EMR, Secrets Manager, MSK interactions
+    "boto3>=1.34.0",
+    "botocore>=1.34.0",
+
+    # HTTP — DataSF and Open-Meteo API calls
+    "requests>=2.31.0",
+    "httpx>=0.27.0",           # async-capable alternative
+
+    # Data processing — local DataFrame operations before S3 upload
+    "pandas>=2.2.0",
+    "pyarrow>=15.0.0",         # Parquet read/write engine
+
+    # Geospatial — SF neighborhood polygon lookups
+    "geopandas>=0.14.0",
+    "shapely>=2.0.0",
+
+    # Kafka producer — streaming event simulation
+    "kafka-python>=2.0.2",
+
+    # Configuration — typed environment variable management
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+
+    # Utilities
+    "tenacity>=8.2.0",         # retry logic for API calls
+    "rich>=13.7.0",            # beautiful CLI output
+    "click>=8.1.7",            # CLI entry points
+    "loguru>=0.7.0",           # structured logging
+]
+
+[project.optional-dependencies]
+# ─────────────────────────────────────────────────────────────
+# DEVELOPMENT — local dev, testing, linting
+# Install with: pip install -e ".[dev]"
+# ─────────────────────────────────────────────────────────────
+dev = [
+    # Testing
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-asyncio>=0.23.0",
+    "moto[s3,redshift,emr]>=5.0.0",   # AWS mock for tests
+
+    # Code quality
+    "ruff>=0.3.0",             # linting + formatting (replaces flake8/black/isort)
+    "mypy>=1.9.0",             # static type checking
+    "pre-commit>=3.6.0",
+
+    # Type stubs
+    "boto3-stubs[s3,redshift,emr,secretsmanager]>=1.34.0",
+    "pandas-stubs>=2.2.0",
+]
+
+# ─────────────────────────────────────────────────────────────
+# SPARK — PySpark jobs (installed separately on EMR/Glue)
+# Install with: pip install -e ".[spark]"
+# ─────────────────────────────────────────────────────────────
+spark = [
+    "pyspark>=3.5.0",
+    "delta-spark>=3.1.0",      # Delta Lake support (optional)
+]
+
+# ─────────────────────────────────────────────────────────────
+# AIRFLOW — local Airflow dev (heavy, install separately)
+# Install with: pip install -e ".[airflow]"
+# ─────────────────────────────────────────────────────────────
+airflow = [
+    "apache-airflow>=2.8.0",
+    "apache-airflow-providers-amazon>=8.19.0",
+    "apache-airflow-providers-postgres>=5.10.0",
+]
+
+# ─────────────────────────────────────────────────────────────
+# QUALITY — Great Expectations
+# Install with: pip install -e ".[quality]"
+# ─────────────────────────────────────────────────────────────
+quality = [
+    "great-expectations>=0.18.0",
+]
+
+# Install all extras at once: pip install -e ".[all]"
+all = [
+    "urbanpulse[dev,spark,airflow,quality]",
+]
+
+# ─────────────────────────────────────────────────────────────
+# PACKAGE DISCOVERY
+# ─────────────────────────────────────────────────────────────
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ingestion*", "spark*", "quality*"]
+
+# ─────────────────────────────────────────────────────────────
+# CLI ENTRY POINTS
+# After install, these commands are available in your PATH
+# ─────────────────────────────────────────────────────────────
+[project.scripts]
+urbanpulse-ingest = "ingestion.batch.sf_taxi_loader:main"
+urbanpulse-weather = "ingestion.batch.weather_ingester:main"
+urbanpulse-produce = "ingestion.streaming.event_producer:main"
+
+# ─────────────────────────────────────────────────────────────
+# RUFF — Linting & Formatting (replaces black, flake8, isort)
+# ─────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "RUF", # ruff-specific rules
+]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ─────────────────────────────────────────────────────────────
+# MYPY — Static Type Checking
+# ─────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_ignores = true
+
+# ─────────────────────────────────────────────────────────────
+# PYTEST — Test Configuration
+# ─────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["ingestion/tests", "spark/tests", "quality/tests"]
+addopts = "-v --cov=ingestion --cov=spark --cov-report=term-missing"
+log_cli = true
+log_cli_level = "INFO"

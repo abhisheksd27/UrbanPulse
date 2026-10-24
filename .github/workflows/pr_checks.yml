@@ -1,0 +1,141 @@
+# ==============================================================================
+# .github/workflows/pr_checks.yml
+# Role: Pull Request Quality Gate
+#
+# WHAT THIS DOES:
+# Runs automated checks on every pull request to catch issues before merge.
+# If ANY check fails, the PR is blocked — no merging broken code.
+#
+# CHECKS:
+#   1. Python linting (ruff) — catches code style issues and common bugs
+#   2. Python unit tests (pytest) — verifies ingestion and Spark logic
+#   3. Terraform format check — ensures all .tf files are formatted consistently
+#   4. Terraform validate — validates Terraform configuration is syntactically correct
+#   5. dbt compile — verifies all SQL models compile without errors
+#
+# WHEN IT RUNS:
+#   - On every PR opened, updated (push to PR branch), or reopened
+#   - Does NOT deploy anything — read-only validation only
+# ==============================================================================
+
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+# Cancel in-progress runs for the same PR (saves CI minutes)
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 1: Python — Lint + Test
+  # ─────────────────────────────────────────────────────────────
+  python-checks:
+    name: Python Lint & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Lint with ruff
+        run: |
+          ruff check . --output-format=github
+          ruff format --check .
+
+      - name: Type check with mypy
+        run: mypy ingestion/ spark/ --ignore-missing-imports
+        continue-on-error: true  # Non-blocking until fully typed
+
+      - name: Run unit tests
+        run: pytest --cov=ingestion --cov=spark --cov-report=xml -v
+        env:
+          # Use dummy values for tests (moto mocks AWS)
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+        continue-on-error: true
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 2: Terraform — Format + Validate
+  # ─────────────────────────────────────────────────────────────
+  terraform-checks:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform 1.6
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6.6'
+
+      - name: Terraform Format Check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+        # If this fails, run `make tf-fmt` locally to fix
+
+      - name: Terraform Init (with mock backend)
+        working-directory: terraform
+        run: |
+          terraform init -backend=false
+        # -backend=false skips S3 state backend (no AWS creds needed in CI)
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 3: dbt — Compile SQL Models
+  # ─────────────────────────────────────────────────────────────
+  dbt-compile:
+    name: dbt Compile
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dbt-redshift
+        run: pip install dbt-redshift==1.7.0
+
+      - name: Install dbt dependencies
+        working-directory: dbt
+        run: dbt deps
+
+      - name: Compile dbt models
+        working-directory: dbt
+        run: dbt compile --profiles-dir . --target dev
+        env:
+          # Compile-only check — no real DB connection needed with --target dev + mock profile
+          REDSHIFT_HOST: localhost
+          REDSHIFT_USER: dbt
+          REDSHIFT_PASSWORD: dbt
+          REDSHIFT_DB: urbanpulse_dw
