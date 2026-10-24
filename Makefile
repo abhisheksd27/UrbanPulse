@@ -115,24 +115,29 @@ tf-output: ## Show Terraform outputs (bucket names, endpoints)
 # ─────────────────────────────────────────────────────────────
 # DATA INGESTION
 # ─────────────────────────────────────────────────────────────
-.PHONY: ingest-taxi ingest-weather ingest-geo ingest-all
+.PHONY: ingest-taxi ingest-weather ingest-geo ingest-all ingest-sample-local
 
-ingest-taxi: env-check ## Ingest SF taxi data (YEAR=2024 MONTH=01)
-	python -m ingestion.batch.sf_taxi_loader --year $(YEAR) --month $(MONTH)
+ingest-taxi: ## Ingest SF taxi data (YEAR=2024 MONTH=01)
+	python3 -m ingestion.batch.sf_taxi_loader --year $(YEAR) --month $(MONTH)
 
-ingest-weather: env-check ## Ingest weather data (YEAR=2024 MONTH=01)
-	python -m ingestion.batch.weather_ingester --year $(YEAR) --month $(MONTH)
+ingest-weather: ## Ingest weather data (YEAR=2024 MONTH=01)
+	python3 -m ingestion.batch.weather_ingester --year $(YEAR) --month $(MONTH)
 
-ingest-geo: env-check ## Load SF neighborhoods GeoJSON to S3
-	python -m ingestion.batch.geo_loader
+ingest-geo: ## Load SF neighborhoods GeoJSON to S3
+	python3 -m ingestion.batch.geo_loader
 
-ingest-all: env-check ## Run all batch ingestion for a given month
+ingest-all: ## Run all batch ingestion for a given month
 	$(MAKE) ingest-taxi YEAR=$(YEAR) MONTH=$(MONTH)
 	$(MAKE) ingest-weather YEAR=$(YEAR) MONTH=$(MONTH)
 	$(MAKE) ingest-geo
 
+ingest-sample-local: ## Ingest sample taxi + weather + geo into local lake without cloud creds
+	python3 -m ingestion.batch.sf_taxi_loader --year $(YEAR) --month $(MONTH) --sample --local-only
+	python3 -m ingestion.batch.weather_ingester --year $(YEAR) --month $(MONTH) --sample --local-only
+	python3 -m ingestion.batch.geo_loader --local-only
+
 produce-events: ## Start Kafka event producer (streaming simulation)
-	python -m ingestion.streaming.event_producer
+	python3 -m ingestion.streaming.event_producer --dry-run
 
 # ─────────────────────────────────────────────────────────────
 # SPARK — Batch Processing
@@ -204,7 +209,7 @@ test: ## Run all unit tests with coverage
 	pytest
 
 test-ingestion: ## Run only ingestion tests
-	pytest ingestion/tests/ -v
+	python3 -m unittest discover -s ingestion/tests -v
 
 test-spark: ## Run only PySpark tests
 	pytest spark/tests/ -v

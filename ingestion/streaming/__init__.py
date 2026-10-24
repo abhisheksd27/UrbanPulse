@@ -1,9 +1,18 @@
-# ==============================================================================
-# ingestion/streaming/__init__.py
-#
-# Package: ingestion.streaming
-#
-# Modules:
-#   event_producer.py  — Simulates real-time taxi trip events, publishes to Kafka MSK
-#   spark_consumer.py  — Spark Structured Streaming job consuming from Kafka MSK
-# ==============================================================================
+"""
+UrbanPulse Streaming Ingestion Package
+======================================
+Modules:
+  - event_producer: Real-time SF taxi GPS and meter telemetry event generator
+"""
+
+from ingestion.streaming.event_producer import (
+    KafkaEventPublisher,
+    TaxiEventGenerator,
+    run_producer_loop,
+)
+
+__all__ = [
+    "TaxiEventGenerator",
+    "KafkaEventPublisher",
+    "run_producer_loop",
+]

@@ -61,3 +61,67 @@ output "airflow_instance_profile" {
   description = "EC2 Instance Profile to attach to Airflow host instance (Step 4)"
   value       = module.iam.airflow_instance_profile_name
 }
+
+# ─────────────────────────────────────────────────────────────
+# MSK Kafka Outputs (Step 8 — Streaming)
+# ─────────────────────────────────────────────────────────────
+
+# Kafka bootstrap brokers (TLS) — paste into .env as KAFKA_BOOTSTRAP_SERVERS
+output "kafka_bootstrap_brokers_tls" {
+  description = "TLS Kafka broker endpoints — set as KAFKA_BOOTSTRAP_SERVERS in .env for Python and Spark"
+  value       = module.msk.bootstrap_brokers_tls
+}
+
+# MSK Cluster ARN
+output "msk_cluster_arn" {
+  description = "Amazon Resource Name of the MSK Kafka cluster"
+  value       = module.msk.cluster_arn
+}
+
+# ─────────────────────────────────────────────────────────────
+# EMR Spark Outputs (Step 3 — Batch Processing)
+# ─────────────────────────────────────────────────────────────
+
+# EMR Cluster ID — paste into Airflow connection or DAG conf
+output "emr_cluster_id" {
+  description = "EMR cluster ID — used by Airflow EmrAddStepsOperator to submit Spark jobs"
+  value       = module.emr.cluster_id
+}
+
+# EMR Master DNS — for SSH / Spark History Server access
+output "emr_master_dns" {
+  description = "DNS of the EMR master node — access Spark UI at http://<master_dns>:18080"
+  value       = module.emr.master_public_dns
+}
+
+# ─────────────────────────────────────────────────────────────
+# Airflow Outputs (Step 4 — Orchestration)
+# ─────────────────────────────────────────────────────────────
+
+# Airflow UI URL — open in browser after apply
+output "airflow_url" {
+  description = "Airflow webserver URL — open in browser, login admin/admin"
+  value       = module.airflow.airflow_url
+}
+
+# SSH connection command
+output "airflow_ssh_command" {
+  description = "SSH command to connect to Airflow host"
+  value       = module.airflow.ssh_command
+}
+
+# ─────────────────────────────────────────────────────────────
+# Secrets Manager Outputs
+# ─────────────────────────────────────────────────────────────
+
+# Redshift secret ARN — use in boto3: secretsmanager.get_secret_value(SecretId=...)
+output "redshift_secret_arn" {
+  description = "Secrets Manager ARN for Redshift credentials — use in Python ingestion scripts"
+  value       = module.secrets.redshift_secret_arn
+}
+
+# DataSF token SSM path — update value manually in AWS Console
+output "datasf_token_ssm_path" {
+  description = "SSM Parameter path for DataSF token — update in AWS Console: Systems Manager → Parameter Store"
+  value       = module.secrets.datasf_token_ssm_path
+}

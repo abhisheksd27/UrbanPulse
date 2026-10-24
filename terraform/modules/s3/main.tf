@@ -148,14 +148,14 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
 # expect these standard directory prefixes to exist.
 resource "aws_s3_object" "lake_prefixes" {
   for_each = toset([
-    "raw/taxi/",           # Landed SF Taxi Parquet files (Step 2 — ingestion)
-    "raw/weather/",        # Landed Open-Meteo weather Parquet files (Step 2 — ingestion)
-    "raw/geo/",            # Landed SF Neighborhoods GeoJSON (Step 2 — geo_loader)
-    "raw/stream/",         # Landed real-time streaming micro-batches (Step 8 — Kafka)
-    "staging/taxi/",       # Cleaned, typed, de-duplicated taxi Parquet (Step 3 — Spark bronze→silver)
-    "staging/weather/",    # Standardized weather Parquet (Step 3 — Spark bronze→silver)
-    "curated/taxi/",       # Enriched, metrics-computed taxi Parquet (Step 3 — Spark silver→gold)
-    "curated/streaming/",  # Real-time micro-batch output (Step 8 — Spark Structured Streaming)
+    "raw/taxi/",          # Landed SF Taxi Parquet files (Step 2 — ingestion)
+    "raw/weather/",       # Landed Open-Meteo weather Parquet files (Step 2 — ingestion)
+    "raw/geo/",           # Landed SF Neighborhoods GeoJSON (Step 2 — geo_loader)
+    "raw/stream/",        # Landed real-time streaming micro-batches (Step 8 — Kafka)
+    "staging/taxi/",      # Cleaned, typed, de-duplicated taxi Parquet (Step 3 — Spark bronze→silver)
+    "staging/weather/",   # Standardized weather Parquet (Step 3 — Spark bronze→silver)
+    "curated/taxi/",      # Enriched, metrics-computed taxi Parquet (Step 3 — Spark silver→gold)
+    "curated/streaming/", # Real-time micro-batch output (Step 8 — Spark Structured Streaming)
   ])
 
   bucket  = aws_s3_bucket.lake.id

@@ -29,6 +29,12 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0" # Allows 5.x updates, blocks breaking 6.0 releases
     }
+    # random: generates Fernet keys and DB passwords stored in Secrets Manager
+    # No dependency on randomness source — purely deterministic after first apply
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # ─────────────────────────────────────────────────────────────
@@ -46,8 +52,8 @@ terraform {
     bucket         = "urbanpulse-tf-state-REPLACE_WITH_ACCOUNT_ID"
     key            = "urbanpulse/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "urbanpulse-terraform-lock"  # Mutex lock table
-    encrypt        = true                          # AES256 encryption at rest
+    dynamodb_table = "urbanpulse-terraform-lock" # Mutex lock table
+    encrypt        = true                        # AES256 encryption at rest
   }
 }
 

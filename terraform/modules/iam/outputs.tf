@@ -32,3 +32,15 @@ output "airflow_instance_profile_name" {
   description = "IAM Instance Profile name to attach to EC2 running Airflow"
   value       = aws_iam_instance_profile.airflow_ec2.name
 }
+
+# Airflow EC2 Role Name — needed by MSK module to attach the MSK describe policy
+output "airflow_role_name" {
+  description = "IAM Role name for the Airflow EC2 instance — used to attach additional policies (e.g. MSK)"
+  value       = aws_iam_role.airflow_ec2.name
+}
+
+# EMR EC2 Role ARN — needed for EMR module to reference when building Spark S3 policies
+output "emr_ec2_role_arn" {
+  description = "IAM Role ARN for EMR EC2 instance profile"
+  value       = aws_iam_role.airflow_ec2.arn
+}

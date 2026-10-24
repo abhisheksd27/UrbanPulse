@@ -138,8 +138,8 @@ UrbanPulse/
 | Step | Component | Status |
 |---|---|---|
 | 0 | Foundation (repo, Makefile, env) | ✅ Done |
-| 1 | Terraform Infrastructure | 🟡 In Progress |
-| 2 | Data Ingestion | 🔲 Pending |
+| 1 | Terraform Infrastructure | ✅ Done |
+| 2 | Data Ingestion | ✅ Done |
 | 3 | PySpark Processing | 🔲 Pending |
 | 4 | Airflow Orchestration | 🔲 Pending |
 | 5 | dbt Transformation | 🔲 Pending |

@@ -84,3 +84,90 @@ module "redshift" {
   node_type          = "dc2.large"
   number_of_nodes    = 1
 }
+
+# ─────────────────────────────────────────────────────────────
+# 5. Module: MSK (Managed Kafka Cluster for Streaming)
+# ─────────────────────────────────────────────────────────────
+# Provisions a 2-broker Kafka MSK cluster for the real-time streaming pipeline.
+# Python event_producer.py publishes taxi events, Spark Structured Streaming consumes them.
+#
+# Dependency chain:
+#   module.vpc  → provides vpc_id, vpc_cidr, private_subnet_ids
+#   module.iam  → provides airflow_role_name (MSK describe policy attached there)
+#   module.s3   → provides artifacts_bucket_id (for MSK broker log delivery)
+module "msk" {
+  source = "./modules/msk"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  vpc_id              = module.vpc.vpc_id             # VPC → MSK
+  vpc_cidr            = module.vpc.vpc_cidr           # VPC → MSK security group ingress
+  private_subnet_ids  = module.vpc.private_subnet_ids # VPC → MSK broker placement
+  artifacts_bucket_id = module.s3.artifacts_bucket_id # S3 → MSK log delivery
+  airflow_role_name   = module.iam.airflow_role_name  # IAM → MSK describe policy attachment
+}
+
+# ─────────────────────────────────────────────────────────────
+# 6. Module: EMR (Spark Cluster for Batch Processing)
+# ─────────────────────────────────────────────────────────────
+# Provisions an Amazon EMR cluster running Apache Spark 3.4 for the
+# bronze→silver and silver→gold PySpark batch transformation jobs.
+# Airflow DAGs submit steps to this cluster via EmrAddStepsOperator.
+#
+# Dependency chain:
+#   module.vpc → provides vpc_id, vpc_cidr, private_subnet_ids
+#   module.s3  → provides lake/artifacts bucket ARNs for Spark job S3 access
+module "emr" {
+  source = "./modules/emr"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  vpc_id               = module.vpc.vpc_id
+  vpc_cidr             = module.vpc.vpc_cidr
+  private_subnet_ids   = module.vpc.private_subnet_ids
+  lake_bucket_arn      = module.s3.lake_bucket_arn
+  artifacts_bucket_arn = module.s3.artifacts_bucket_arn
+  artifacts_bucket_id  = module.s3.artifacts_bucket_id
+}
+
+# ─────────────────────────────────────────────────────────────
+# 7. Module: Airflow (EC2 Orchestration Host)
+# ─────────────────────────────────────────────────────────────
+# Provisions an EC2 instance running Apache Airflow 2.8 via Docker Compose.
+# Airflow is the control plane — it schedules and monitors every pipeline DAG.
+#
+# Dependency chain:
+#   module.vpc → provides public_subnet_ids (Airflow goes in public subnet for UI access)
+#                and airflow_sg_id (port 8080 security group)
+#   module.iam → provides instance_profile_name (grants Airflow S3/EMR/MSK access)
+#   module.s3  → provides artifacts_bucket_id (DAG sync + Airflow log remote storage)
+module "airflow" {
+  source = "./modules/airflow"
+
+  project_name          = var.project_name
+  environment           = var.environment
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.vpc.public_subnet_ids
+  airflow_sg_id         = module.vpc.airflow_sg_id
+  instance_profile_name = module.iam.airflow_instance_profile_name
+  artifacts_bucket_id   = module.s3.artifacts_bucket_id
+  ssh_public_key        = var.ssh_public_key
+}
+
+# ─────────────────────────────────────────────────────────────
+# 8. Module: Secrets (Secrets Manager + SSM Parameter Store)
+# ─────────────────────────────────────────────────────────────
+# Stores all sensitive config values — Redshift credentials, Airflow Fernet key,
+# API tokens — in AWS-managed secret storage.
+# No secrets in code, Git, or Terraform state.
+#
+# Dependency chain:
+#   module.redshift → provides cluster_endpoint (stored in Redshift secret bundle)
+module "secrets" {
+  source = "./modules/secrets"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  redshift_host     = module.redshift.cluster_endpoint
+  redshift_password = var.redshift_master_password
+}

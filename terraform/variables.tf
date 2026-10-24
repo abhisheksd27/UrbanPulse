@@ -64,3 +64,25 @@ variable "my_ip_cidr" {
   type        = string
   default     = "0.0.0.0/0"
 }
+
+# 6. SSH public key content for Airflow EC2 access
+# Generate: ssh-keygen -t ed25519 -f ~/.ssh/urbanpulse
+# Then paste the output of: cat ~/.ssh/urbanpulse.pub
+variable "ssh_public_key" {
+  description = "SSH public key (contents of ~/.ssh/urbanpulse.pub) for EC2 key pair"
+  type        = string
+  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIREPLACE_WITH_YOUR_PUBLIC_KEY urbanpulse"
+}
+
+# 7. Redshift node type override (allows per-environment tuning in tfvars)
+variable "redshift_node_type" {
+  description = "Redshift node type. Use dc2.large for dev (~$0.25/hr), dc2.8xlarge for prod"
+  type        = string
+  default     = "dc2.large"
+}
+
+variable "redshift_number_of_nodes" {
+  description = "Number of Redshift nodes. 1 for single-node dev, 2+ for multi-node prod"
+  type        = number
+  default     = 1
+}
