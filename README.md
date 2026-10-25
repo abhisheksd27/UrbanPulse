@@ -140,7 +140,7 @@ UrbanPulse/
 | 0 | Foundation (repo, Makefile, env) | ✅ Done |
 | 1 | Terraform Infrastructure | ✅ Done |
 | 2 | Data Ingestion | ✅ Done |
-| 3 | PySpark Processing | 🔲 Pending |
+| 3 | PySpark Processing | ✅ Done |
 | 4 | Airflow Orchestration | 🔲 Pending |
 | 5 | dbt Transformation | 🔲 Pending |
 | 6 | Great Expectations Quality | 🔲 Pending |

@@ -1,10 +1,23 @@
-# ==============================================================================
-# spark/__init__.py
-#
-# Package: spark
-#
-# Sub-packages:
-#   spark.jobs  — PySpark transformation jobs (bronze→silver, silver→gold)
-#   spark.utils — Reusable SparkSession factory and S3 helpers
-#   spark.tests — Unit tests for PySpark jobs (using local[*] mode)
-# ==============================================================================
+"""
+UrbanPulse PySpark Processing Package
+=====================================
+Modules for Bronze -> Silver -> Gold transformation pipelines.
+"""
+
+from spark.jobs.schema_definitions import (
+    GOLD_FACT_TRIPS_COLUMNS,
+    RAW_GEO_COLUMNS,
+    RAW_TAXI_COLUMNS,
+    RAW_WEATHER_COLUMNS,
+    SILVER_TAXI_COLUMNS,
+    SILVER_WEATHER_COLUMNS,
+)
+
+__all__ = [
+    "RAW_TAXI_COLUMNS",
+    "RAW_WEATHER_COLUMNS",
+    "RAW_GEO_COLUMNS",
+    "SILVER_TAXI_COLUMNS",
+    "SILVER_WEATHER_COLUMNS",
+    "GOLD_FACT_TRIPS_COLUMNS",
+]

@@ -142,23 +142,33 @@ produce-events: ## Start Kafka event producer (streaming simulation)
 # ─────────────────────────────────────────────────────────────
 # SPARK — Batch Processing
 # ─────────────────────────────────────────────────────────────
-.PHONY: spark-bronze spark-silver spark-all
+.PHONY: spark-bronze spark-silver spark-all spark-bronze-local spark-silver-local spark-all-local
 
-spark-bronze: env-check ## Run PySpark Bronze → Silver job (YEAR=2024 MONTH=01)
+spark-bronze: ## Run PySpark Bronze → Silver job via spark-submit (YEAR=2024 MONTH=01)
 	spark-submit \
 		--master local[*] \
 		spark/jobs/bronze_to_silver.py \
 		--year $(YEAR) --month $(MONTH)
 
-spark-silver: env-check ## Run PySpark Silver → Gold job (YEAR=2024 MONTH=01)
+spark-silver: ## Run PySpark Silver → Gold job via spark-submit (YEAR=2024 MONTH=01)
 	spark-submit \
 		--master local[*] \
 		spark/jobs/silver_to_gold.py \
 		--year $(YEAR) --month $(MONTH)
 
+spark-bronze-local: ## Run Bronze → Silver locally without spark-submit (YEAR=2024 MONTH=01)
+	python3 -m spark.jobs.bronze_to_silver --year $(YEAR) --month $(MONTH) --local
+
+spark-silver-local: ## Run Silver → Gold locally without spark-submit (YEAR=2024 MONTH=01)
+	python3 -m spark.jobs.silver_to_gold --year $(YEAR) --month $(MONTH) --local
+
 spark-all: ## Run full Spark pipeline for a given month
 	$(MAKE) spark-bronze YEAR=$(YEAR) MONTH=$(MONTH)
 	$(MAKE) spark-silver YEAR=$(YEAR) MONTH=$(MONTH)
+
+spark-all-local: ## Run full local transformation pipeline (YEAR=2024 MONTH=01)
+	$(MAKE) spark-bronze-local YEAR=$(YEAR) MONTH=$(MONTH)
+	$(MAKE) spark-silver-local YEAR=$(YEAR) MONTH=$(MONTH)
 
 # ─────────────────────────────────────────────────────────────
 # DBT — Transformation
@@ -212,7 +222,7 @@ test-ingestion: ## Run only ingestion tests
 	python3 -m unittest discover -s ingestion/tests -v
 
 test-spark: ## Run only PySpark tests
-	pytest spark/tests/ -v
+	python3 -m unittest discover -s spark/tests -v
 
 lint: ## Lint and format check all Python code
 	ruff check .
