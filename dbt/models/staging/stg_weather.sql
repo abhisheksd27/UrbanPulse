@@ -5,32 +5,51 @@
 -- Schema: staging
 --
 -- WHAT THIS MODEL DOES:
--- Casts and renames Open-Meteo hourly weather observations.
--- Adds a human-readable weather_description from the WMO code.
--- Adds convenience boolean flags (is_raining, is_clear).
---
--- HOW IT CONNECTS:
---   Upstream:   landing.weather_observations (raw COPY from S3)
---   Downstream: core.dim_weather             (builds the weather dimension)
---               core.fact_trips              (joined by nearest hour)
+-- Casts, validates, and enriches hourly weather observations from Open-Meteo.
+-- Joins with the WMO weather codes seed table for descriptive labels.
 -- ==============================================================================
 
--- TODO: Implement in Step 5 (dbt Transformation)
+{{ config(materialized='view') }}
 
-select
-    cast(time as timestamp)                                as observed_at,
-    cast(temperature_2m as decimal(5,2))                   as temperature_c,
-    cast(precipitation as decimal(6,2))                    as precipitation_mm,
-    cast(windspeed_10m as decimal(6,2))                    as wind_speed_kmh,
-    cast(visibility as integer)                            as visibility_m,
-    cast(weathercode as integer)                           as weather_code,
+with source_data as (
 
-    -- Convenience flags
-    case when cast(precipitation as decimal(6,2)) > 0.1
-         then true else false end                          as is_raining,
-    case when cast(weathercode as integer) = 0
-         then true else false end                         as is_clear
+    select
+        cast(time as timestamp)                                as observed_at,
+        cast(temperature_2m as decimal(5,2))                   as temperature_c,
+        cast(coalesce(precipitation, 0.0) as decimal(6,2))     as precipitation_mm,
+        cast(coalesce(windspeed_10m, 0.0) as decimal(6,2))     as wind_speed_kmh,
+        cast(coalesce(visibility, 10000) as integer)           as visibility_m,
+        cast(coalesce(weathercode, 0) as integer)              as weather_code
 
-from {{ source('landing', 'weather_observations') }}
+    from {{ source('landing', 'weather_observations') }}
 
-where time is not null
+    where time is not null
+
+),
+
+enriched as (
+
+    select
+        w.observed_at,
+        cast(w.observed_at as date)                            as observed_date,
+        extract(hour from w.observed_at)                       as observed_hour,
+        w.temperature_c,
+        -- Temperature in Fahrenheit for US operational context
+        round((w.temperature_c * 9.0 / 5.0) + 32.0, 2)         as temperature_f,
+        w.precipitation_mm,
+        w.wind_speed_kmh,
+        w.visibility_m,
+        w.weather_code,
+        coalesce(c.description, 'Unknown')                     as weather_description,
+        coalesce(c.severity, 'None')                           as weather_severity,
+        case when w.precipitation_mm > 0.1 then true else false end as is_raining,
+        case when w.weather_code = 0 then true else false end       as is_clear,
+        case when w.weather_code in (45, 48) then true else false end as is_foggy
+
+    from source_data w
+    left join {{ ref('wmo_weather_codes') }} c
+        on w.weather_code = c.code
+
+)
+
+select * from enriched

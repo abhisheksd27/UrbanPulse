@@ -1,0 +1,121 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Conformed date dimension table spanning 2022 to 2025"
+    columns:
+      - name: date_key
+        description: "Primary key in YYYYMMDD integer format"
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "Standard calendar date"
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: "4-digit calendar year"
+      - name: is_weekend
+        description: "Boolean flag: true if Saturday or Sunday"
+      - name: is_holiday
+        description: "Boolean flag: true if US Federal holiday"
+
+  - name: dim_location
+    description: "Dimension table of San Francisco municipal neighborhoods and districts"
+    columns:
+      - name: location_key
+        description: "Surrogate primary key"
+        tests:
+          - unique
+          - not_null
+      - name: neighborhood_name
+        description: "Official neighborhood name"
+        tests:
+          - unique
+          - not_null
+      - name: is_downtown
+        description: "Boolean flag: true if in downtown core"
+      - name: is_airport
+        description: "Boolean flag: true if location represents SFO airport"
+
+  - name: dim_weather
+    description: "Dimension table of hourly weather conditions and descriptions"
+    columns:
+      - name: weather_key
+        description: "Surrogate primary key"
+        tests:
+          - unique
+          - not_null
+      - name: observed_at
+        description: "Hourly observation timestamp"
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_trips
+    description: "Central fact table: one row per completed taxi trip"
+    columns:
+      - name: trip_key
+        description: "Surrogate primary key"
+        tests:
+          - unique
+          - not_null
+      - name: trip_id
+        description: "Natural source key from DataSF"
+        tests:
+          - unique
+          - not_null
+      - name: date_key
+        description: "Foreign key referencing dim_date.date_key"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: pickup_location_key
+        description: "Foreign key referencing dim_location for pickup"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_location')
+              field: location_key
+      - name: dropoff_location_key
+        description: "Foreign key referencing dim_location for dropoff"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_location')
+              field: location_key
+      - name: fare_amount
+        description: "Base fare in USD"
+        tests:
+          - not_null
+      - name: total_amount
+        description: "Total trip revenue in USD (fare + tip)"
+        tests:
+          - not_null
+      - name: trip_duration_min
+        description: "Trip duration in minutes"
+        tests:
+          - not_null
+
+  - name: fact_weather_obs
+    description: "Fact table recording hourly meteorological metrics"
+    columns:
+      - name: weather_obs_key
+        description: "Surrogate primary key"
+        tests:
+          - unique
+          - not_null
+      - name: date_key
+        description: "Foreign key referencing dim_date.date_key"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: observed_at
+        description: "Observation timestamp"
+        tests:
+          - not_null

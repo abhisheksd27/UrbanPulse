@@ -125,3 +125,22 @@ output "datasf_token_ssm_path" {
   description = "SSM Parameter path for DataSF token — update in AWS Console: Systems Manager → Parameter Store"
   value       = module.secrets.datasf_token_ssm_path
 }
+
+# ─────────────────────────────────────────────────────────────
+# Governance & Security Outputs (Step 10)
+# ─────────────────────────────────────────────────────────────
+
+output "sns_alerts_topic_arn" {
+  description = "SNS Topic ARN for platform alerts, cost anomalies, and quality check failures"
+  value       = module.governance.alerts_topic_arn
+}
+
+output "lake_kms_key_arn" {
+  description = "Customer Managed Key (CMK) ARN used for data lake encryption"
+  value       = module.governance.kms_key_arn
+}
+
+output "monthly_budget_id" {
+  description = "AWS Cost Budget ID"
+  value       = module.governance.budget_id
+}

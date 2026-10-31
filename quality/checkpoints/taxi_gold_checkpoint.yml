@@ -1,0 +1,27 @@
+# ==============================================================================
+# Great Expectations Checkpoint — Taxi Gold (Curated Layer)
+# ==============================================================================
+name: taxi_gold_checkpoint
+config_version: 1.0
+class_name: SimpleCheckpoint
+run_name_template: "%Y%m%d-%H%M%S-taxi-gold-validation"
+
+validations:
+  - batch_request:
+      datasource_name: lake_datasource
+      data_connector_name: local_lake_connector
+      data_asset_name: curated/taxi
+    expectation_suite_name: sf_taxi_curated
+
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: store_evaluation_params
+    action:
+      class_name: StoreEvaluationParametersAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+      site_names:
+        - local_site

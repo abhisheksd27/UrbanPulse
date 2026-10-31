@@ -1,0 +1,75 @@
+version: 2
+
+models:
+  - name: stg_taxi_trips
+    description: "Cleaned and typed SF taxi trips from landing.taxi_trips"
+    columns:
+      - name: trip_id
+        description: "Primary key for taxi trips"
+        tests:
+          - unique
+          - not_null
+      - name: pickup_at
+        description: "UTC pickup timestamp"
+        tests:
+          - not_null
+      - name: dropoff_at
+        description: "UTC dropoff timestamp"
+        tests:
+          - not_null
+      - name: fare_amount
+        description: "Trip base fare in USD"
+        tests:
+          - not_null
+      - name: total_amount
+        description: "Total fare including tip in USD"
+        tests:
+          - not_null
+      - name: distance_miles
+        description: "Trip distance in miles (> 0)"
+        tests:
+          - not_null
+      - name: trip_duration_min
+        description: "Calculated trip duration in minutes (1 to 720)"
+        tests:
+          - not_null
+      - name: payment_type
+        description: "Payment method"
+        tests:
+          - accepted_values:
+              values: ['Credit Card', 'Cash', 'Mobile Pay', 'Unknown']
+
+  - name: stg_weather
+    description: "Hourly San Francisco meteorological observations enriched with WMO descriptions"
+    columns:
+      - name: observed_at
+        description: "Primary key: hourly observation timestamp"
+        tests:
+          - unique
+          - not_null
+      - name: temperature_c
+        description: "Temperature in degrees Celsius"
+        tests:
+          - not_null
+      - name: weather_code
+        description: "WMO meteorological classification code"
+        tests:
+          - not_null
+
+  - name: stg_locations
+    description: "Staging representation of SF Neighborhoods seed table"
+    columns:
+      - name: location_id
+        description: "Unique integer ID for the neighborhood"
+        tests:
+          - unique
+          - not_null
+      - name: neighborhood_name
+        description: "Official San Francisco neighborhood name"
+        tests:
+          - unique
+          - not_null
+      - name: district_name
+        description: "Municipal supervisory district"
+        tests:
+          - not_null

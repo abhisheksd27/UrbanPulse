@@ -1,0 +1,63 @@
+version: 2
+
+sources:
+  - name: landing
+    description: "Raw landed tables in Amazon Redshift loaded via COPY from S3 data lake"
+    database: "{{ env_var('REDSHIFT_DB', 'urbanpulse_dw') }}"
+    schema: landing
+    tables:
+      - name: taxi_trips
+        description: "Raw San Francisco permitted taxi trip logs from DataSF (SFMTA)"
+        columns:
+          - name: trip_id
+            description: "Unique trip identifier assigned by SFMTA"
+            tests:
+              - unique
+              - not_null
+          - name: vehicle_id
+            description: "Anonymized taxi vehicle or medallion identifier"
+          - name: company
+            description: "Operating taxi fleet company"
+          - name: pickup_datetime
+            description: "ISO UTC pickup timestamp"
+            tests:
+              - not_null
+          - name: dropoff_datetime
+            description: "ISO UTC dropoff timestamp"
+            tests:
+              - not_null
+          - name: pickup_latitude
+            description: "Pickup GPS latitude coordinate"
+          - name: pickup_longitude
+            description: "Pickup GPS longitude coordinate"
+          - name: dropoff_latitude
+            description: "Dropoff GPS latitude coordinate"
+          - name: dropoff_longitude
+            description: "Dropoff GPS longitude coordinate"
+          - name: fare
+            description: "Metered trip fare amount in USD"
+          - name: tips
+            description: "Tip amount recorded in USD"
+          - name: distance
+            description: "Trip distance in miles"
+          - name: payment_type
+            description: "Payment method used (Credit Card, Cash, etc.)"
+
+      - name: weather_observations
+        description: "Historical hourly meteorological observations for San Francisco from Open-Meteo"
+        columns:
+          - name: time
+            description: "Hourly ISO UTC observation timestamp"
+            tests:
+              - unique
+              - not_null
+          - name: temperature_2m
+            description: "Air temperature at 2 meters height (°C)"
+          - name: precipitation
+            description: "Hourly precipitation depth (mm)"
+          - name: windspeed_10m
+            description: "Wind speed at 10 meters height (km/h)"
+          - name: visibility
+            description: "Horizontal atmospheric visibility (meters)"
+          - name: weathercode
+            description: "WMO meteorological classification code (0-95)"

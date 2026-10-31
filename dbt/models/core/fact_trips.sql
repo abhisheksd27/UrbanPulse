@@ -5,89 +5,145 @@
 -- Schema: core
 --
 -- WHAT THIS MODEL DOES:
--- Central fact table — one row per taxi trip with all measures and FK references.
--- Joins staging trips with:
---   - dim_date       via pickup date
---   - dim_location   via pickup and dropoff coordinates
---   - dim_weather    via nearest hourly weather observation
--- Computes derived metrics: duration, speed, fare_per_km, tip_percentage.
+-- Central Star Schema fact table: one row per completed taxi trip.
+-- Joins with:
+--   - dim_date (by calendar date)
+--   - dim_location (by nearest neighborhood centroid for pickup & dropoff)
+--   - dim_weather (by nearest hourly observation)
 --
 -- INCREMENTAL STRATEGY:
--- On each dbt run, only new trips (by pickup_at) are processed.
--- This avoids re-scanning the entire trips table on every run.
---
--- HOW IT CONNECTS:
---   Upstream:   stg_taxi_trips, dim_date, dim_location, dim_weather
---   Downstream: mart_daily_ops, mart_zone_perf, mart_revenue
+-- Scans and appends/merges only records with pickup_at greater than current max.
 -- ==============================================================================
-
--- TODO: Full implementation in Step 5 (dbt Transformation)
 
 {{
     config(
         materialized='incremental',
         unique_key='trip_id',
         incremental_strategy='merge',
-        dist='pickup_at',
+        dist='date_key',
         sort=['pickup_at']
     )
 }}
 
-select
-    {{ dbt_utils.generate_surrogate_key(['t.trip_id']) }}  as trip_key,
-    t.trip_id,
+with trips as (
 
-    -- Foreign Keys
-    d.date_key                                              as date_key,
-    pl.location_key                                         as pickup_location_key,
-    dl.location_key                                         as dropoff_location_key,
-    w.weather_key                                           as weather_key,
+    select *
+    from {{ ref('stg_taxi_trips') }}
 
-    -- Timestamps
-    t.pickup_at,
-    t.dropoff_at,
+    {% if is_incremental() %}
+    where pickup_at > (select coalesce(max(pickup_at), '2000-01-01') from {{ this }})
+    {% endif %}
 
-    -- Measures
-    datediff('minute', t.pickup_at, t.dropoff_at)          as trip_duration_min,
-    t.distance_miles,
-    t.distance_miles * 1.60934                             as distance_km,
-    t.fare_amount,
-    t.tip_amount,
-    t.fare_amount + t.tip_amount                           as total_amount,
+),
 
-    -- Derived metrics
-    case when t.fare_amount > 0
-         then round(t.tip_amount / t.fare_amount * 100, 2)
-         else 0 end                                        as tip_percentage,
+locations as (
 
-    case when t.distance_miles > 0
-         then round(t.fare_amount / (t.distance_miles * 1.60934), 2)
-         else null end                                     as fare_per_km,
+    select
+        location_key,
+        location_id,
+        neighborhood_name,
+        center_latitude,
+        center_longitude
+    from {{ ref('dim_location') }}
 
-    case when datediff('minute', t.pickup_at, t.dropoff_at) > 0
-         then round((t.distance_miles * 1.60934) /
-                    (datediff('minute', t.pickup_at, t.dropoff_at) / 60.0), 2)
-         else null end                                     as speed_kmh,
+),
 
-    t.payment_type,
-    t.company
+-- Resolve nearest SF neighborhood centroid for pickup location
+pickup_locations as (
 
-from {{ ref('stg_taxi_trips') }} t
+    select
+        trip_id,
+        location_key as pickup_location_key
+    from (
+        select
+            t.trip_id,
+            l.location_key,
+            row_number() over (
+                partition by t.trip_id
+                order by (
+                    (t.pickup_lat - l.center_latitude) * (t.pickup_lat - l.center_latitude) +
+                    (t.pickup_lng - l.center_longitude) * (t.pickup_lng - l.center_longitude) * 0.62
+                ) asc
+            ) as rnk
+        from trips t
+        cross join locations l
+    ) ranked
+    where rnk = 1
 
-left join {{ ref('dim_date') }} d
-    on cast(t.pickup_at as date) = d.full_date
+),
 
-left join {{ ref('dim_location') }} pl
-    on round(t.pickup_lat, 4) = pl.latitude
-   and round(t.pickup_lng, 4) = pl.longitude
+-- Resolve nearest SF neighborhood centroid for dropoff location
+dropoff_locations as (
 
-left join {{ ref('dim_location') }} dl
-    on round(t.dropoff_lat, 4) = dl.latitude
-   and round(t.dropoff_lng, 4) = dl.longitude
+    select
+        trip_id,
+        location_key as dropoff_location_key
+    from (
+        select
+            t.trip_id,
+            l.location_key,
+            row_number() over (
+                partition by t.trip_id
+                order by (
+                    (t.dropoff_lat - l.center_latitude) * (t.dropoff_lat - l.center_latitude) +
+                    (t.dropoff_lng - l.center_longitude) * (t.dropoff_lng - l.center_longitude) * 0.62
+                ) asc
+            ) as rnk
+        from trips t
+        cross join locations l
+    ) ranked
+    where rnk = 1
 
-left join {{ ref('dim_weather') }} w
-    on dateadd('hour', datediff('hour', '2000-01-01', t.pickup_at), '2000-01-01') = w.observed_at
+),
 
-{% if is_incremental() %}
-where t.pickup_at > (select max(pickup_at) from {{ this }})
-{% endif %}
+final_fact as (
+
+    select
+        {{ generate_surrogate_key(['t.trip_id']) }}            as trip_key,
+        t.trip_id,
+        t.vehicle_id,
+        t.company,
+
+        -- Foreign Keys
+        coalesce(d.date_key, 19000101)                         as date_key,
+        pl.pickup_location_key,
+        dl.dropoff_location_key,
+        w.weather_key,
+
+        -- Timestamps
+        t.pickup_at,
+        t.dropoff_at,
+
+        -- Measures
+        t.trip_duration_min,
+        t.distance_miles,
+        t.distance_km,
+        t.fare_amount,
+        t.tip_amount,
+        t.total_amount,
+
+        -- Advanced KPIs
+        {{ safe_divide('t.distance_km', '(t.trip_duration_min / 60.0)', 2, 'null') }} as speed_kmh,
+        {{ safe_divide('t.fare_amount', 't.distance_km', 2, 'null') }}                as fare_per_km,
+        {{ safe_divide('(t.tip_amount * 100.0)', 't.fare_amount', 2, '0.0') }}       as tip_percentage,
+
+        -- Operational attributes
+        t.payment_type
+
+    from trips t
+
+    left join {{ ref('dim_date') }} d
+        on t.pickup_date = d.full_date
+
+    left join pickup_locations pl
+        on t.trip_id = pl.trip_id
+
+    left join dropoff_locations dl
+        on t.trip_id = dl.trip_id
+
+    left join {{ ref('dim_weather') }} w
+        on date_trunc('hour', t.pickup_at) = w.observed_at
+
+)
+
+select * from final_fact

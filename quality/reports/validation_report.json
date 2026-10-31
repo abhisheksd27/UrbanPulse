@@ -1,0 +1,664 @@
+{
+  "generated_at": "2026-10-29T16:15:17.420669+00:00",
+  "overall_success": true,
+  "suites_evaluated": 4,
+  "reports": [
+    {
+      "suite_name": "sf_taxi_raw",
+      "evaluated_at": "2026-10-29T16:15:17.399868+00:00",
+      "data_path": "/Volumes/Abhishek/Data Engineering project/UrbanPulse/data/lake/raw/taxi/year=2024/month=01",
+      "total_records": 100,
+      "total_columns": 14,
+      "total_expectations": 6,
+      "passed_expectations": 6,
+      "failed_expectations": 0,
+      "success": true,
+      "results": [
+        {
+          "expectation_type": "expect_table_row_count_to_be_between",
+          "kwargs": {
+            "min_value": 1,
+            "max_value": 2000000
+          },
+          "notes": "Asserts raw taxi dataset is not empty",
+          "success": true,
+          "observed_value": 100,
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_table_columns_to_match_set",
+          "kwargs": {
+            "column_set": [
+              "trip_id",
+              "vehicle_id",
+              "company",
+              "pickup_datetime",
+              "dropoff_datetime",
+              "pickup_latitude",
+              "pickup_longitude",
+              "dropoff_latitude",
+              "dropoff_longitude",
+              "fare",
+              "tips",
+              "distance",
+              "payment_type",
+              "ingested_at"
+            ],
+            "exact_match": false
+          },
+          "notes": "Ensures all required canonical columns are present in raw data",
+          "success": true,
+          "observed_value": [
+            "company",
+            "distance",
+            "dropoff_datetime",
+            "dropoff_latitude",
+            "dropoff_longitude",
+            "fare",
+            "ingested_at",
+            "payment_type",
+            "pickup_datetime",
+            "pickup_latitude",
+            "pickup_longitude",
+            "tips",
+            "trip_id",
+            "vehicle_id"
+          ],
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "trip_id"
+          },
+          "notes": "trip_id must never be null in source",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "pickup_datetime"
+          },
+          "notes": "pickup_datetime is mandatory for temporal partitioning",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "fare",
+            "min_value": 0.0,
+            "max_value": 5000.0
+          },
+          "notes": "Fare amounts must be positive",
+          "success": true,
+          "observed_value": {
+            "min": 7.49,
+            "max": 105.04,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "distance",
+            "min_value": 0.0,
+            "max_value": 500.0
+          },
+          "notes": "Distance must be non-negative",
+          "success": true,
+          "observed_value": {
+            "min": 0.92,
+            "max": 17.35,
+            "violations": 0
+          },
+          "details": {}
+        }
+      ]
+    },
+    {
+      "suite_name": "weather_raw",
+      "evaluated_at": "2026-10-29T16:15:17.404993+00:00",
+      "data_path": "/Volumes/Abhishek/Data Engineering project/UrbanPulse/data/lake/raw/weather/year=2024/month=01",
+      "total_records": 744,
+      "total_columns": 7,
+      "total_expectations": 6,
+      "passed_expectations": 6,
+      "failed_expectations": 0,
+      "success": true,
+      "results": [
+        {
+          "expectation_type": "expect_table_row_count_to_be_between",
+          "kwargs": {
+            "min_value": 672,
+            "max_value": 745
+          },
+          "notes": "Asserts a full monthly observation series (28 to 31 days * 24 hours)",
+          "success": true,
+          "observed_value": 744,
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_table_columns_to_match_set",
+          "kwargs": {
+            "column_set": [
+              "time",
+              "temperature_2m",
+              "precipitation",
+              "windspeed_10m",
+              "visibility",
+              "weathercode",
+              "ingested_at"
+            ],
+            "exact_match": false
+          },
+          "notes": "Asserts all meteorological observation metrics exist",
+          "success": true,
+          "observed_value": [
+            "ingested_at",
+            "precipitation",
+            "temperature_2m",
+            "time",
+            "visibility",
+            "weathercode",
+            "windspeed_10m"
+          ],
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "time"
+          },
+          "notes": "Observation timestamp cannot be null",
+          "success": true,
+          "observed_value": "0 nulls / 744 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "temperature_2m",
+            "min_value": -10.0,
+            "max_value": 50.0
+          },
+          "notes": "Temperature in Celsius within realistic San Francisco bounds",
+          "success": true,
+          "observed_value": {
+            "min": 5.15,
+            "max": 15.97,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "precipitation",
+            "min_value": 0.0,
+            "max_value": 150.0
+          },
+          "notes": "Precipitation in mm cannot be negative",
+          "success": true,
+          "observed_value": {
+            "min": 0.0,
+            "max": 4.86,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "weathercode",
+            "min_value": 0,
+            "max_value": 99
+          },
+          "notes": "WMO code must be within standard classification range (0-99)",
+          "success": true,
+          "observed_value": {
+            "min": 0.0,
+            "max": 63.0,
+            "violations": 0
+          },
+          "details": {}
+        }
+      ]
+    },
+    {
+      "suite_name": "sf_taxi_staging",
+      "evaluated_at": "2026-10-29T16:15:17.411652+00:00",
+      "data_path": "/Volumes/Abhishek/Data Engineering project/UrbanPulse/data/lake/staging/taxi/year=2024/month=01",
+      "total_records": 100,
+      "total_columns": 25,
+      "total_expectations": 12,
+      "passed_expectations": 12,
+      "failed_expectations": 0,
+      "success": true,
+      "results": [
+        {
+          "expectation_type": "expect_table_row_count_to_be_between",
+          "kwargs": {
+            "min_value": 1,
+            "max_value": 5000000
+          },
+          "notes": "Asserts staging taxi dataset contains valid records",
+          "success": true,
+          "observed_value": 100,
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_table_columns_to_match_set",
+          "kwargs": {
+            "column_set": [
+              "trip_id",
+              "vehicle_id",
+              "company",
+              "pickup_at",
+              "dropoff_at",
+              "pickup_date",
+              "pickup_hour",
+              "pickup_lat",
+              "pickup_lng",
+              "dropoff_lat",
+              "dropoff_lng",
+              "fare_amount",
+              "tip_amount",
+              "total_amount",
+              "distance_miles",
+              "distance_km",
+              "duration_minutes",
+              "payment_type",
+              "pickup_neighborhood",
+              "pickup_district",
+              "dropoff_neighborhood",
+              "dropoff_district",
+              "is_airport_trip",
+              "is_downtown_trip",
+              "processed_at"
+            ],
+            "exact_match": false
+          },
+          "notes": "Ensures all Silver staging enriched columns exist",
+          "success": true,
+          "observed_value": [
+            "company",
+            "distance_km",
+            "distance_miles",
+            "dropoff_at",
+            "dropoff_district",
+            "dropoff_lat",
+            "dropoff_lng",
+            "dropoff_neighborhood",
+            "duration_minutes",
+            "fare_amount",
+            "is_airport_trip",
+            "is_downtown_trip",
+            "payment_type",
+            "pickup_at",
+            "pickup_date",
+            "pickup_district",
+            "pickup_hour",
+            "pickup_lat",
+            "pickup_lng",
+            "pickup_neighborhood",
+            "processed_at",
+            "tip_amount",
+            "total_amount",
+            "trip_id",
+            "vehicle_id"
+          ],
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "trip_id"
+          },
+          "notes": "Primary business key trip_id must not be null",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_unique",
+          "kwargs": {
+            "column": "trip_id"
+          },
+          "notes": "trip_id must be strictly unique after deduplication",
+          "success": true,
+          "observed_value": "0 duplicates found",
+          "details": {
+            "duplicate_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "pickup_at"
+          },
+          "notes": "pickup timestamp is required",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "dropoff_at"
+          },
+          "notes": "dropoff timestamp is required",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "fare_amount",
+            "min_value": 0.0,
+            "max_value": 5000.0
+          },
+          "notes": "Fare amounts must be non-negative",
+          "success": true,
+          "observed_value": {
+            "min": 7.49,
+            "max": 105.04,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "total_amount",
+            "min_value": 0.0,
+            "max_value": 10000.0
+          },
+          "notes": "Total amount must be positive and reasonable",
+          "success": true,
+          "observed_value": {
+            "min": 7.95,
+            "max": 117.23,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "distance_km",
+            "min_value": 0.0,
+            "max_value": 800.0
+          },
+          "notes": "Distance in km must be within reasonable limits",
+          "success": true,
+          "observed_value": {
+            "min": 1.481,
+            "max": 27.922,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "duration_minutes",
+            "min_value": 0,
+            "max_value": 720
+          },
+          "notes": "Duration must be between 0 and 12 hours",
+          "success": true,
+          "observed_value": {
+            "min": 3.0,
+            "max": 45.0,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_in_set",
+          "kwargs": {
+            "column": "payment_type",
+            "value_set": [
+              "Cash",
+              "Credit Card",
+              "Credit",
+              "Mobile",
+              "Mobile Pay",
+              "Voucher",
+              "No Charge",
+              "Dispute",
+              "Unknown"
+            ]
+          },
+          "notes": "Payment type must match standardized categories",
+          "success": true,
+          "observed_value": "0 unexpected values",
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "pickup_neighborhood"
+          },
+          "notes": "Geocoded pickup neighborhood must not be null",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        }
+      ]
+    },
+    {
+      "suite_name": "sf_taxi_curated",
+      "evaluated_at": "2026-10-29T16:15:17.418050+00:00",
+      "data_path": "/Volumes/Abhishek/Data Engineering project/UrbanPulse/data/lake/curated/taxi/year=2024/month=01",
+      "total_records": 100,
+      "total_columns": 28,
+      "total_expectations": 9,
+      "passed_expectations": 9,
+      "failed_expectations": 0,
+      "success": true,
+      "results": [
+        {
+          "expectation_type": "expect_table_row_count_to_be_between",
+          "kwargs": {
+            "min_value": 1,
+            "max_value": 5000000
+          },
+          "notes": "Asserts gold curated dataset contains records",
+          "success": true,
+          "observed_value": 100,
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_table_columns_to_match_set",
+          "kwargs": {
+            "column_set": [
+              "trip_id",
+              "vehicle_id",
+              "company",
+              "pickup_at",
+              "dropoff_at",
+              "pickup_date",
+              "pickup_hour",
+              "pickup_neighborhood",
+              "pickup_district",
+              "dropoff_neighborhood",
+              "dropoff_district",
+              "is_airport_trip",
+              "is_downtown_trip",
+              "distance_miles",
+              "distance_km",
+              "duration_minutes",
+              "speed_kmh",
+              "fare_amount",
+              "tip_amount",
+              "total_amount",
+              "tip_percentage",
+              "fare_per_km",
+              "payment_type",
+              "temperature_c",
+              "precipitation_mm",
+              "weather_condition",
+              "is_raining",
+              "curated_at"
+            ],
+            "exact_match": false
+          },
+          "notes": "Ensures all Gold weather-joined and KPI-enriched columns exist",
+          "success": true,
+          "observed_value": [
+            "company",
+            "curated_at",
+            "distance_km",
+            "distance_miles",
+            "dropoff_at",
+            "dropoff_district",
+            "dropoff_neighborhood",
+            "duration_minutes",
+            "fare_amount",
+            "fare_per_km",
+            "is_airport_trip",
+            "is_downtown_trip",
+            "is_raining",
+            "payment_type",
+            "pickup_at",
+            "pickup_date",
+            "pickup_district",
+            "pickup_hour",
+            "pickup_neighborhood",
+            "precipitation_mm",
+            "speed_kmh",
+            "temperature_c",
+            "tip_amount",
+            "tip_percentage",
+            "total_amount",
+            "trip_id",
+            "vehicle_id",
+            "weather_condition"
+          ],
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "trip_id"
+          },
+          "notes": "trip_id must not be null",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_unique",
+          "kwargs": {
+            "column": "trip_id"
+          },
+          "notes": "trip_id must be unique across curated fact trips",
+          "success": true,
+          "observed_value": "0 duplicates found",
+          "details": {
+            "duplicate_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "speed_kmh",
+            "min_value": 0.0,
+            "max_value": 160.0
+          },
+          "notes": "Calculated speed in km/h must be realistic for urban driving",
+          "success": true,
+          "observed_value": {
+            "min": 2.17,
+            "max": 120.0,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "temperature_c",
+            "min_value": -15.0,
+            "max_value": 50.0
+          },
+          "notes": "Correlated temperature in Celsius must fall within realistic bounds",
+          "success": true,
+          "observed_value": {
+            "min": 5.23,
+            "max": 15.97,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_not_be_null",
+          "kwargs": {
+            "column": "weather_condition"
+          },
+          "notes": "Weather condition string must be populated from weather dimension",
+          "success": true,
+          "observed_value": "0 nulls / 100 total",
+          "details": {
+            "null_count": 0
+          }
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "fare_per_km",
+            "min_value": 0.0,
+            "max_value": 500.0
+          },
+          "notes": "Unit economics metric fare_per_km must be reasonable",
+          "success": true,
+          "observed_value": {
+            "min": 2.45,
+            "max": 5.06,
+            "violations": 0
+          },
+          "details": {}
+        },
+        {
+          "expectation_type": "expect_column_values_to_be_between",
+          "kwargs": {
+            "column": "tip_percentage",
+            "min_value": 0.0,
+            "max_value": 100.0
+          },
+          "notes": "Tip percentage must fall within 0-100%",
+          "success": true,
+          "observed_value": {
+            "min": 0.0,
+            "max": 18.05,
+            "violations": 0
+          },
+          "details": {}
+        }
+      ]
+    }
+  ]
+}

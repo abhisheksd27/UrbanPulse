@@ -1,0 +1,131 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "sf_taxi_curated",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 1,
+        "max_value": 5000000
+      },
+      "meta": {
+        "notes": "Asserts gold curated dataset contains records"
+      }
+    },
+    {
+      "expectation_type": "expect_table_columns_to_match_set",
+      "kwargs": {
+        "column_set": [
+          "trip_id",
+          "vehicle_id",
+          "company",
+          "pickup_at",
+          "dropoff_at",
+          "pickup_date",
+          "pickup_hour",
+          "pickup_neighborhood",
+          "pickup_district",
+          "dropoff_neighborhood",
+          "dropoff_district",
+          "is_airport_trip",
+          "is_downtown_trip",
+          "distance_miles",
+          "distance_km",
+          "duration_minutes",
+          "speed_kmh",
+          "fare_amount",
+          "tip_amount",
+          "total_amount",
+          "tip_percentage",
+          "fare_per_km",
+          "payment_type",
+          "temperature_c",
+          "precipitation_mm",
+          "weather_condition",
+          "is_raining",
+          "curated_at"
+        ],
+        "exact_match": false
+      },
+      "meta": {
+        "notes": "Ensures all Gold weather-joined and KPI-enriched columns exist"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "trip_id"
+      },
+      "meta": {
+        "notes": "trip_id must not be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "trip_id"
+      },
+      "meta": {
+        "notes": "trip_id must be unique across curated fact trips"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "speed_kmh",
+        "min_value": 0.0,
+        "max_value": 160.0
+      },
+      "meta": {
+        "notes": "Calculated speed in km/h must be realistic for urban driving"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "temperature_c",
+        "min_value": -15.0,
+        "max_value": 50.0
+      },
+      "meta": {
+        "notes": "Correlated temperature in Celsius must fall within realistic bounds"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "weather_condition"
+      },
+      "meta": {
+        "notes": "Weather condition string must be populated from weather dimension"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "fare_per_km",
+        "min_value": 0.0,
+        "max_value": 500.0
+      },
+      "meta": {
+        "notes": "Unit economics metric fare_per_km must be reasonable"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "tip_percentage",
+        "min_value": 0.0,
+        "max_value": 100.0
+      },
+      "meta": {
+        "notes": "Tip percentage must fall within 0-100%"
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "description": "Gold expectation suite for weather-joined and KPI-enriched SF taxi fact trips"
+  }
+}

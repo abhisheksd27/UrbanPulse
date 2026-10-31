@@ -16,8 +16,23 @@ urbanpulse:
   outputs:
 
     # ──────────────────────────────────────────
+    # LOCAL — Points to local PostgreSQL (Docker Compose)
+    # Used when developing locally without AWS costs
+    # ──────────────────────────────────────────
+    local:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: 5432
+      user: "{{ env_var('POSTGRES_USER', 'airflow') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'airflow') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'airflow') }}"
+      schema: core
+      threads: 4
+      sslmode: prefer
+
+    # ──────────────────────────────────────────
     # DEV — Points to dev Redshift cluster
-    # Used during local development and testing
+    # Used during development and staging tests
     # ──────────────────────────────────────────
     dev:
       type: redshift

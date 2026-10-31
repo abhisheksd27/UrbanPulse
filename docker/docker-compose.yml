@@ -1,0 +1,192 @@
+# ==============================================================================
+# docker/docker-compose.yml — UrbanPulse Local Development Stack
+# ==============================================================================
+# Starts:
+#   1. postgres         — Airflow metadata database (port 5432)
+#   2. airflow-init     — Database migrations & creates default 'admin' user
+#   3. airflow-webserver— Web UI at http://localhost:8080 (admin / admin)
+#   4. airflow-scheduler— DAG scheduler daemon
+#   5. zookeeper        — Distributed coordinator for Kafka (port 2181)
+#   6. kafka            — Apache Kafka broker (ports 9092, 29092)
+#   7. kafka-ui         — Web UI for inspecting Kafka topics at http://localhost:8090
+#   8. metabase         — BI dashboarding UI at http://localhost:3000
+#
+# Usage:
+#   make local-up      # Starts all services in the background
+#   make local-down    # Stops all services
+#   make local-logs    # Follow logs
+# ==============================================================================
+
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.1-python3.11
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: '46BKJoQYlPPOexq0OhDZnIlNepKFfkvQe_VPxwEdMiA='
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: 'false'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__WEBSERVER__SECRET_KEY: 'urbanpulse_local_dev_secret_key_12345'
+    AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+    PYTHONPATH: /opt/airflow:/opt/airflow/dags:/opt/airflow/plugins:/workspace
+    AWS_DEFAULT_REGION: us-east-1
+    S3_LAKE_BUCKET: urbanpulse-lake-dev
+    ENVIRONMENT: local
+  volumes:
+    - ../airflow/dags:/opt/airflow/dags
+    - ../airflow/plugins:/opt/airflow/plugins
+    - ../airflow/config:/opt/airflow/config
+    - ../airflow/logs:/opt/airflow/logs
+    - ../:/workspace
+  depends_on:
+    postgres:
+      condition: service_healthy
+  user: "${AIRFLOW_UID:-50000}:0"
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # 1. PostgreSQL (Airflow & Metabase Backend)
+  # ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: urbanpulse-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────
+  # 2. Airflow DB Migration & Admin User Initialization
+  # ─────────────────────────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: urbanpulse-airflow-init
+    command: >
+      bash -c "
+        airflow db upgrade &&
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@urbanpulse.io \
+          --password admin || true
+      "
+    restart: on-failure
+
+  # ─────────────────────────────────────────────────────────────
+  # 3. Airflow Webserver (UI on :8080)
+  # ─────────────────────────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: urbanpulse-airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ─────────────────────────────────────────────────────────────
+  # 4. Airflow Scheduler
+  # ─────────────────────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: urbanpulse-airflow-scheduler
+    command: scheduler
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ─────────────────────────────────────────────────────────────
+  # 5. ZooKeeper (Kafka Coordinator)
+  # ─────────────────────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: urbanpulse-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────
+  # 6. Apache Kafka Broker
+  # ─────────────────────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: urbanpulse-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────
+  # 7. Kafka UI (Topic & Message Browser on :8090)
+  # ─────────────────────────────────────────────────────────────
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: urbanpulse-kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────
+  # 8. Metabase (Analytics Dashboard on :3000)
+  # ─────────────────────────────────────────────────────────────
+  metabase:
+    image: metabase/metabase:latest
+    container_name: urbanpulse-metabase
+    ports:
+      - "3000:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: airflow
+      MB_DB_PORT: 5432
+      MB_DB_USER: airflow
+      MB_DB_PASS: airflow
+      MB_DB_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

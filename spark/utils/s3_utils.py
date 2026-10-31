@@ -61,8 +61,8 @@ def load_dataset_records(file_path: Union[str, Path]) -> pd.DataFrame:
 
     # If it's a directory (e.g. Spark output folder with part-* files)
     if path.is_dir():
-        parquet_files = list(path.glob("*.parquet"))
-        json_files = list(path.glob("*.json*"))
+        parquet_files = [f for f in sorted(path.glob("*.parquet")) if not f.name.startswith(".")]
+        json_files = [f for f in sorted(path.glob("*.json*")) if not f.name.startswith(".")]
         if parquet_files:
             try:
                 return pd.read_parquet(path)

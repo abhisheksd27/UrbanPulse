@@ -213,16 +213,21 @@ quality-docs: ## Generate & serve Great Expectations data docs
 # ─────────────────────────────────────────────────────────────
 # TESTING
 # ─────────────────────────────────────────────────────────────
-.PHONY: test test-ingestion test-spark lint type-check
+.PHONY: test test-ingestion test-spark test-airflow lint type-check
 
-test: ## Run all unit tests with coverage
-	pytest
+test: ## Run all unit tests across all packages
+	python3 -m unittest discover -s ingestion/tests -v
+	python3 -m unittest discover -s spark/tests -v
+	python3 -m unittest discover -s airflow/tests -v
 
 test-ingestion: ## Run only ingestion tests
 	python3 -m unittest discover -s ingestion/tests -v
 
 test-spark: ## Run only PySpark tests
 	python3 -m unittest discover -s spark/tests -v
+
+test-airflow: ## Run only Airflow DAG integrity and operator tests
+	python3 -m unittest discover -s airflow/tests -v
 
 lint: ## Lint and format check all Python code
 	ruff check .

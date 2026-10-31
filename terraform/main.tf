@@ -171,3 +171,19 @@ module "secrets" {
   redshift_host     = module.redshift.cluster_endpoint
   redshift_password = var.redshift_master_password
 }
+
+# ─────────────────────────────────────────────────────────────
+# 9. Module: Governance (Security, Lake Formation & Budgets)
+# ─────────────────────────────────────────────────────────────
+# Enforces cost limits ($50/month), KMS customer-managed key encryption,
+# SNS alerts for quality/budget anomalies, and Lake Formation data lake governance.
+module "governance" {
+  source = "./modules/governance"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  monthly_budget_usd = var.monthly_budget_usd
+  alert_email        = var.alert_email
+  lake_bucket_arn    = module.s3.lake_bucket_arn
+  glue_role_arn      = module.iam.glue_role_arn
+}

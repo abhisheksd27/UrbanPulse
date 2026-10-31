@@ -17,17 +17,29 @@ on:
     branches: [main]
     paths:
       - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Terraform environment (dev or prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 jobs:
-  terraform-deploy-dev:
-    name: Deploy to Dev
+  terraform-deploy:
+    name: Deploy Terraform Infrastructure
     runs-on: ubuntu-latest
-    environment: dev        # GitHub Environment with protection rules
+    environment: ${{ github.event.inputs.environment || 'dev' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.6.6'
 
@@ -36,7 +48,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ secrets.AWS_REGION || 'us-west-2' }}
 
       - name: Terraform Init
         working-directory: terraform
@@ -44,10 +56,10 @@ jobs:
 
       - name: Terraform Plan
         working-directory: terraform
-        run: terraform plan -var="environment=dev" -out=tfplan
+        run: terraform plan -var="environment=${{ github.event.inputs.environment || 'dev' }}" -out=tfplan
+        env:
+          TF_VAR_redshift_master_password: ${{ secrets.REDSHIFT_MASTER_PASSWORD }}
 
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply tfplan
-        env:
-          TF_VAR_redshift_master_password: ${{ secrets.REDSHIFT_MASTER_PASSWORD }}

@@ -86,3 +86,17 @@ variable "redshift_number_of_nodes" {
   type        = number
   default     = 1
 }
+
+# 8. Monthly AWS Cost Budget limit
+variable "monthly_budget_usd" {
+  description = "Monthly AWS cost budget limit in USD"
+  type        = string
+  default     = "50"
+}
+
+# 9. Alert notification email
+variable "alert_email" {
+  description = "Email recipient for budget alerts and pipeline failures (optional)"
+  type        = string
+  default     = ""
+}

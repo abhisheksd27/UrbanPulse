@@ -129,6 +129,8 @@ UrbanPulse/
 | [`docs/architecture.md`](docs/architecture.md) | Full system architecture deep-dive |
 | [`docs/data_dictionary.md`](docs/data_dictionary.md) | Field definitions for every table |
 | [`docs/runbook.md`](docs/runbook.md) | How to operate and monitor the pipeline |
+| [`docs/dashboards.md`](docs/dashboards.md) | Metabase & QuickSight BI dashboard design |
+| [`docs/governance_security.md`](docs/governance_security.md) | IAM, KMS, Lake Formation & cost control standards |
 | [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
 
 ---
@@ -141,13 +143,13 @@ UrbanPulse/
 | 1 | Terraform Infrastructure | ✅ Done |
 | 2 | Data Ingestion | ✅ Done |
 | 3 | PySpark Processing | ✅ Done |
-| 4 | Airflow Orchestration | 🔲 Pending |
-| 5 | dbt Transformation | 🔲 Pending |
-| 6 | Great Expectations Quality | 🔲 Pending |
-| 7 | GitHub Actions CI/CD | 🔲 Pending |
-| 8 | Kafka Streaming | 🔲 Pending |
-| 9 | Analytics Dashboards | 🔲 Pending |
-| 10 | Governance & Security | 🔲 Pending |
+| 4 | Airflow Orchestration | ✅ Done |
+| 5 | dbt Transformation | ✅ Done |
+| 6 | Great Expectations Quality | ✅ Done |
+| 7 | GitHub Actions CI/CD | ✅ Done |
+| 8 | Kafka Streaming | ✅ Done |
+| 9 | Analytics Dashboards | ✅ Done |
+| 10 | Governance & Security | ✅ Done |
 
 ---
 

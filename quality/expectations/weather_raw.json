@@ -1,0 +1,81 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "weather_raw",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 672,
+        "max_value": 745
+      },
+      "meta": {
+        "notes": "Asserts a full monthly observation series (28 to 31 days * 24 hours)"
+      }
+    },
+    {
+      "expectation_type": "expect_table_columns_to_match_set",
+      "kwargs": {
+        "column_set": [
+          "time",
+          "temperature_2m",
+          "precipitation",
+          "windspeed_10m",
+          "visibility",
+          "weathercode",
+          "ingested_at"
+        ],
+        "exact_match": false
+      },
+      "meta": {
+        "notes": "Asserts all meteorological observation metrics exist"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "time"
+      },
+      "meta": {
+        "notes": "Observation timestamp cannot be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "temperature_2m",
+        "min_value": -10.0,
+        "max_value": 50.0
+      },
+      "meta": {
+        "notes": "Temperature in Celsius within realistic San Francisco bounds"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "precipitation",
+        "min_value": 0.0,
+        "max_value": 150.0
+      },
+      "meta": {
+        "notes": "Precipitation in mm cannot be negative"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "weathercode",
+        "min_value": 0,
+        "max_value": 99
+      },
+      "meta": {
+        "notes": "WMO code must be within standard classification range (0-99)"
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "description": "Bronze expectation suite for raw Open-Meteo hourly weather observations"
+  }
+}

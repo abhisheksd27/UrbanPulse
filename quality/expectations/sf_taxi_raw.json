@@ -1,0 +1,86 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "sf_taxi_raw",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 1,
+        "max_value": 2000000
+      },
+      "meta": {
+        "notes": "Asserts raw taxi dataset is not empty"
+      }
+    },
+    {
+      "expectation_type": "expect_table_columns_to_match_set",
+      "kwargs": {
+        "column_set": [
+          "trip_id",
+          "vehicle_id",
+          "company",
+          "pickup_datetime",
+          "dropoff_datetime",
+          "pickup_latitude",
+          "pickup_longitude",
+          "dropoff_latitude",
+          "dropoff_longitude",
+          "fare",
+          "tips",
+          "distance",
+          "payment_type",
+          "ingested_at"
+        ],
+        "exact_match": false
+      },
+      "meta": {
+        "notes": "Ensures all required canonical columns are present in raw data"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "trip_id"
+      },
+      "meta": {
+        "notes": "trip_id must never be null in source"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "pickup_datetime"
+      },
+      "meta": {
+        "notes": "pickup_datetime is mandatory for temporal partitioning"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "fare",
+        "min_value": 0.0,
+        "max_value": 5000.0
+      },
+      "meta": {
+        "notes": "Fare amounts must be positive"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "distance",
+        "min_value": 0.0,
+        "max_value": 500.0
+      },
+      "meta": {
+        "notes": "Distance must be non-negative"
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "description": "Bronze expectation suite for raw SF taxi trip Parquet data"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "sf_taxi_staging",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 1,
+        "max_value": 5000000
+      },
+      "meta": {
+        "notes": "Asserts staging taxi dataset contains valid records"
+      }
+    },
+    {
+      "expectation_type": "expect_table_columns_to_match_set",
+      "kwargs": {
+        "column_set": [
+          "trip_id",
+          "vehicle_id",
+          "company",
+          "pickup_at",
+          "dropoff_at",
+          "pickup_date",
+          "pickup_hour",
+          "pickup_lat",
+          "pickup_lng",
+          "dropoff_lat",
+          "dropoff_lng",
+          "fare_amount",
+          "tip_amount",
+          "total_amount",
+          "distance_miles",
+          "distance_km",
+          "duration_minutes",
+          "payment_type",
+          "pickup_neighborhood",
+          "pickup_district",
+          "dropoff_neighborhood",
+          "dropoff_district",
+          "is_airport_trip",
+          "is_downtown_trip",
+          "processed_at"
+        ],
+        "exact_match": false
+      },
+      "meta": {
+        "notes": "Ensures all Silver staging enriched columns exist"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "trip_id"
+      },
+      "meta": {
+        "notes": "Primary business key trip_id must not be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "trip_id"
+      },
+      "meta": {
+        "notes": "trip_id must be strictly unique after deduplication"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "pickup_at"
+      },
+      "meta": {
+        "notes": "pickup timestamp is required"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "dropoff_at"
+      },
+      "meta": {
+        "notes": "dropoff timestamp is required"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "fare_amount",
+        "min_value": 0.0,
+        "max_value": 5000.0
+      },
+      "meta": {
+        "notes": "Fare amounts must be non-negative"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "total_amount",
+        "min_value": 0.0,
+        "max_value": 10000.0
+      },
+      "meta": {
+        "notes": "Total amount must be positive and reasonable"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "distance_km",
+        "min_value": 0.0,
+        "max_value": 800.0
+      },
+      "meta": {
+        "notes": "Distance in km must be within reasonable limits"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "duration_minutes",
+        "min_value": 0,
+        "max_value": 720
+      },
+      "meta": {
+        "notes": "Duration must be between 0 and 12 hours"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "payment_type",
+        "value_set": [
+          "Cash",
+          "Credit Card",
+          "Credit",
+          "Mobile",
+          "Mobile Pay",
+          "Voucher",
+          "No Charge",
+          "Dispute",
+          "Unknown"
+        ]
+      },
+      "meta": {
+        "notes": "Payment type must match standardized categories"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "pickup_neighborhood"
+      },
+      "meta": {
+        "notes": "Geocoded pickup neighborhood must not be null"
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "description": "Silver expectation suite for cleansed, deduplicated, and geocoded SF taxi trips"
+  }
+}

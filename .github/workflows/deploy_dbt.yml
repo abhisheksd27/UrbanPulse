@@ -1,0 +1,106 @@
+# ==============================================================================
+# .github/workflows/deploy_dbt.yml
+# Role: Continuous Deployment for dbt Transformations
+#
+# WHAT THIS DOES:
+# 1. Triggers upon push to `main` with changes in `dbt/**` or manual dispatch.
+# 2. Installs dbt-redshift and project package dependencies.
+# 3. Runs seeds, models, and data tests against the Redshift Data Warehouse.
+# 4. Generates documentation artifacts and publishes dbt catalog.
+# ==============================================================================
+
+name: Deploy dbt Transformations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dbt/**'
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Redshift environment'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  dbt-deploy:
+    name: Run & Test dbt Models
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target_env || 'prod' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dbt-redshift
+        run: |
+          pip install --upgrade pip
+          pip install dbt-redshift==1.7.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Install dbt dependencies
+        working-directory: dbt
+        run: dbt deps
+
+      - name: Run dbt seeds
+        working-directory: dbt
+        run: dbt seed --target ${{ github.event.inputs.target_env || 'prod' }}
+        env:
+          REDSHIFT_HOST: ${{ secrets.REDSHIFT_HOST }}
+          REDSHIFT_PORT: ${{ secrets.REDSHIFT_PORT || '5439' }}
+          REDSHIFT_USER: ${{ secrets.REDSHIFT_USER }}
+          REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
+          REDSHIFT_DB: ${{ secrets.REDSHIFT_DB || 'urbanpulse_dw' }}
+
+      - name: Run dbt models
+        working-directory: dbt
+        run: dbt run --target ${{ github.event.inputs.target_env || 'prod' }}
+        env:
+          REDSHIFT_HOST: ${{ secrets.REDSHIFT_HOST }}
+          REDSHIFT_PORT: ${{ secrets.REDSHIFT_PORT || '5439' }}
+          REDSHIFT_USER: ${{ secrets.REDSHIFT_USER }}
+          REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
+          REDSHIFT_DB: ${{ secrets.REDSHIFT_DB || 'urbanpulse_dw' }}
+
+      - name: Test dbt models
+        working-directory: dbt
+        run: dbt test --target ${{ github.event.inputs.target_env || 'prod' }}
+        env:
+          REDSHIFT_HOST: ${{ secrets.REDSHIFT_HOST }}
+          REDSHIFT_PORT: ${{ secrets.REDSHIFT_PORT || '5439' }}
+          REDSHIFT_USER: ${{ secrets.REDSHIFT_USER }}
+          REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
+          REDSHIFT_DB: ${{ secrets.REDSHIFT_DB || 'urbanpulse_dw' }}
+
+      - name: Generate dbt documentation
+        working-directory: dbt
+        run: dbt docs generate --target ${{ github.event.inputs.target_env || 'prod' }}
+        env:
+          REDSHIFT_HOST: ${{ secrets.REDSHIFT_HOST }}
+          REDSHIFT_PORT: ${{ secrets.REDSHIFT_PORT || '5439' }}
+          REDSHIFT_USER: ${{ secrets.REDSHIFT_USER }}
+          REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
+          REDSHIFT_DB: ${{ secrets.REDSHIFT_DB || 'urbanpulse_dw' }}
+
+      - name: Upload dbt documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-docs
+          path: dbt/target/
